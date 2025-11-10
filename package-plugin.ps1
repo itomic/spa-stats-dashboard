@@ -12,6 +12,7 @@ New-Item -ItemType Directory -Force -Path "temp\$PLUGIN_NAME" | Out-Null
 
 # Copy plugin files
 Copy-Item "squash-stats-dashboard-plugin.php" -Destination "temp\$PLUGIN_NAME\"
+Copy-Item "readme.txt" -Destination "temp\$PLUGIN_NAME\"
 Copy-Item "PLUGIN-README.md" -Destination "temp\$PLUGIN_NAME\README.md"
 
 # Create zip file with correct structure (folder should be at root of zip)

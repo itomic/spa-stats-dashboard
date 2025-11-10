@@ -14,6 +14,7 @@ mkdir -p temp/${PLUGIN_NAME}
 
 # Copy plugin files
 cp squash-stats-dashboard-plugin.php temp/${PLUGIN_NAME}/
+cp readme.txt temp/${PLUGIN_NAME}/
 cp PLUGIN-README.md temp/${PLUGIN_NAME}/README.md
 
 # Create zip file
