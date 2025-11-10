@@ -1,8 +1,17 @@
 # Squash Stats Dashboard WordPress Plugin
 
-This WordPress plugin embeds the Squash Stats Dashboard from `stats.squashplayers.app` into your WordPress site.
+This WordPress plugin embeds the Squash Stats Dashboard from `stats.squashplayers.app` into your WordPress site using a simple shortcode.
 
 ## Installation
+
+### Method 1: Upload ZIP File (Recommended)
+
+1. **Download:** Get `squash-stats-dashboard-1.1.0.zip`
+2. **Upload:** WordPress Admin → Plugins → Add New → Upload Plugin
+3. **Install:** Click "Install Now"
+4. **Activate:** Click "Activate Plugin"
+
+### Method 2: Manual Installation
 
 1. **Create Plugin Directory:**
    ```bash
@@ -11,40 +20,65 @@ This WordPress plugin embeds the Squash Stats Dashboard from `stats.squashplayer
 
 2. **Upload Files:**
    - Copy `squash-stats-dashboard-plugin.php` to `wp-content/plugins/squash-stats-dashboard/`
-   - Copy the `templates/` folder to `wp-content/plugins/squash-stats-dashboard/`
 
 3. **Activate Plugin:**
    - Go to WordPress Admin → Plugins
    - Find "Squash Stats Dashboard"
    - Click "Activate"
 
-4. **Flush Permalinks:**
-   - Go to Settings → Permalinks
-   - Click "Save Changes" (this flushes the rewrite rules)
-
 ## Usage
 
-Once activated, the dashboard will be available at:
+### Basic Shortcode
+
+Simply add this shortcode to any WordPress page or post:
+
 ```
-https://squash.players.app/squash-venues-courts-world-stats-new/
+[squash_stats_dashboard]
+```
+
+### Examples
+
+**Example 1: Simple Usage**
+1. Create a new page: "Squash Stats - NEW"
+2. Set the URL slug to: `squash-venues-courts-world-stats-new`
+3. Add the shortcode: `[squash_stats_dashboard]`
+4. Publish!
+
+**Example 2: Custom Height**
+```
+[squash_stats_dashboard height="2000px"]
+```
+
+**Example 3: Custom CSS Class**
+```
+[squash_stats_dashboard class="my-custom-class"]
+```
+
+**Example 4: Both**
+```
+[squash_stats_dashboard height="2000px" class="full-width-dashboard"]
 ```
 
 ## Features
 
-- **No iFrame:** Direct HTML injection for better performance and SEO
-- **Asset Optimization:** Loads CSS/JS from stats.squashplayers.app
-- **Caching:** Intelligent caching of manifest and content
-- **WordPress Integration:** Works seamlessly with your WordPress theme
-- **Side-by-side Testing:** Runs alongside existing page without conflicts
+- ✅ **Shortcode Based:** Use `[squash_stats_dashboard]` anywhere
+- ✅ **Flexible:** Create any page/URL you want
+- ✅ **No iFrame:** Direct HTML injection for better performance and SEO
+- ✅ **Asset Optimization:** Loads CSS/JS from stats.squashplayers.app
+- ✅ **Smart Caching:** Intelligent caching of manifest and content
+- ✅ **WordPress Integration:** Works seamlessly with your WordPress theme
+- ✅ **Multiple Instances:** Use on multiple pages if needed
+- ✅ **Customizable:** Optional height and CSS class parameters
 
 ## Technical Details
 
 ### How It Works
 
-1. **Custom Rewrite Rule:** Creates a virtual page at `/squash-venues-courts-world-stats-new/`
+1. **Shortcode Registration:** Registers `[squash_stats_dashboard]` shortcode
 2. **Content Fetching:** Pulls HTML content from `https://stats.squashplayers.app`
 3. **Asset Loading:** Dynamically loads Vite-built assets using manifest.json
-4. **Caching Strategy:**
+4. **Smart Enqueueing:** Only loads assets on pages that use the shortcode
+5. **Caching Strategy:**
    - Manifest cached for 1 hour
    - Content cached for 5 minutes
    - Automatic cache invalidation
@@ -63,18 +97,16 @@ The plugin loads these external assets:
 ```
 squash-stats-dashboard/
 ├── squash-stats-dashboard-plugin.php  (Main plugin file)
-├── templates/
-│   └── dashboard-template.php         (Page template)
 └── README.md                          (This file)
 ```
 
 ## Troubleshooting
 
-### Page Shows 404
+### Shortcode Not Working
 
-1. Go to Settings → Permalinks
-2. Click "Save Changes"
-3. This will flush the rewrite rules
+1. Make sure the plugin is activated
+2. Check that you're using the exact shortcode: `[squash_stats_dashboard]`
+3. Try viewing the page in an incognito window (cache issue)
 
 ### Assets Not Loading
 
@@ -91,12 +123,12 @@ The content is cached for 5 minutes. To force refresh:
 
 ## Migration Path
 
-When ready to replace the old page:
+When ready to replace the old Zoho Analytics page:
 
-1. **Test thoroughly** on `/squash-venues-courts-world-stats-new/`
-2. **Update the rewrite rule** in the plugin to use the original URL
-3. **Remove or redirect** the old Zoho Analytics page
-4. **Flush permalinks** again
+1. **Test thoroughly** on your new page (e.g., `/squash-venues-courts-world-stats-new/`)
+2. **Edit the old page** at `/squash-venues-courts-world-stats/`
+3. **Replace the Zoho iframe** with `[squash_stats_dashboard]`
+4. **Publish** - Done! The new dashboard is now live
 
 ## Support
 
@@ -109,6 +141,14 @@ For issues or questions:
 GPL v2 or later
 
 ## Changelog
+
+### 1.1.0 (2025-11-10)
+- **BREAKING CHANGE:** Switched from custom URL to shortcode-based system
+- Added `[squash_stats_dashboard]` shortcode
+- Added optional `height` and `class` parameters
+- Removed template-based approach for simpler implementation
+- Smart asset enqueueing (only loads on pages with shortcode)
+- Complete flexibility - use on any page/URL
 
 ### 1.0.0 (2025-11-10)
 - Initial release

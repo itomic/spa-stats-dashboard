@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Squash Stats Dashboard
  * Plugin URI: https://stats.squashplayers.app
- * Description: Embeds the Squash Stats Dashboard from stats.squashplayers.app into WordPress
- * Version: 1.0.0
+ * Description: Embeds the Squash Stats Dashboard from stats.squashplayers.app into WordPress using shortcode [squash_stats_dashboard]
+ * Version: 1.1.0
  * Author: Itomic Apps
  * Author URI: https://www.itomic.com.au
  * License: GPL v2 or later
@@ -18,117 +18,132 @@ if (!defined('ABSPATH')) {
 class Squash_Stats_Dashboard {
     
     private $dashboard_url = 'https://stats.squashplayers.app';
+    private $assets_enqueued = false;
     
     public function __construct() {
-        add_action('init', array($this, 'register_custom_page'));
-        add_filter('template_include', array($this, 'load_custom_template'));
-        add_action('wp_enqueue_scripts', array($this, 'enqueue_dashboard_assets'));
-    }
-    
-    /**
-     * Register custom page for the new dashboard
-     */
-    public function register_custom_page() {
-        // Add rewrite rule for the new page
-        add_rewrite_rule(
-            '^squash-venues-courts-world-stats-new/?$',
-            'index.php?squash_stats_dashboard=1',
-            'top'
-        );
+        // Register shortcode
+        add_shortcode('squash_stats_dashboard', array($this, 'render_dashboard_shortcode'));
         
-        // Add query var
-        add_filter('query_vars', function($vars) {
-            $vars[] = 'squash_stats_dashboard';
-            return $vars;
-        });
+        // Enqueue assets when shortcode is used
+        add_action('wp_enqueue_scripts', array($this, 'maybe_enqueue_dashboard_assets'));
     }
     
     /**
-     * Load custom template for our dashboard page
+     * Render the dashboard shortcode
      */
-    public function load_custom_template($template) {
-        if (get_query_var('squash_stats_dashboard')) {
-            // Use our custom template
-            $custom_template = plugin_dir_path(__FILE__) . 'templates/dashboard-template.php';
-            if (file_exists($custom_template)) {
-                return $custom_template;
-            }
-        }
-        return $template;
+    public function render_dashboard_shortcode($atts) {
+        // Parse shortcode attributes
+        $atts = shortcode_atts(array(
+            'height' => 'auto', // Allow custom height
+            'class' => '',      // Allow custom CSS classes
+        ), $atts);
+        
+        // Ensure assets are enqueued
+        $this->enqueue_dashboard_assets();
+        
+        // Get dashboard content
+        $content = $this->get_dashboard_content();
+        
+        // Wrap in container with optional custom class
+        $wrapper_class = 'squash-dashboard-wrapper ' . esc_attr($atts['class']);
+        $height_style = $atts['height'] !== 'auto' ? 'min-height: ' . esc_attr($atts['height']) . ';' : '';
+        
+        return sprintf(
+            '<div class="%s" style="%s">%s</div>',
+            $wrapper_class,
+            $height_style,
+            $content
+        );
     }
     
     /**
-     * Enqueue dashboard assets only on our custom page
+     * Check if we need to enqueue assets (when shortcode is present)
+     */
+    public function maybe_enqueue_dashboard_assets() {
+        global $post;
+        
+        // Check if the current post/page contains our shortcode
+        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'squash_stats_dashboard')) {
+            $this->enqueue_dashboard_assets();
+        }
+    }
+    
+    /**
+     * Enqueue dashboard assets
      */
     public function enqueue_dashboard_assets() {
-        if (get_query_var('squash_stats_dashboard')) {
-            // Get the manifest to find the hashed asset filenames
-            $manifest_url = $this->dashboard_url . '/build/manifest.json';
-            $manifest = $this->fetch_manifest($manifest_url);
-            
-            if ($manifest) {
-                // Enqueue CSS
-                if (isset($manifest['resources/css/app.css'])) {
-                    wp_enqueue_style(
-                        'squash-dashboard-app',
-                        $this->dashboard_url . '/build/' . $manifest['resources/css/app.css']['file'],
-                        array(),
-                        null
-                    );
-                }
-                
-                // Enqueue JS
-                if (isset($manifest['resources/js/dashboard.js'])) {
-                    wp_enqueue_script(
-                        'squash-dashboard-js',
-                        $this->dashboard_url . '/build/' . $manifest['resources/js/dashboard.js']['file'],
-                        array(),
-                        null,
-                        true
-                    );
-                }
-                
-                // Enqueue MapLibre GL JS and CSS
+        // Prevent multiple enqueueing
+        if ($this->assets_enqueued) {
+            return;
+        }
+        
+        $this->assets_enqueued = true;
+        // Get the manifest to find the hashed asset filenames
+        $manifest_url = $this->dashboard_url . '/build/manifest.json';
+        $manifest = $this->fetch_manifest($manifest_url);
+        
+        if ($manifest) {
+            // Enqueue CSS
+            if (isset($manifest['resources/css/app.css'])) {
                 wp_enqueue_style(
-                    'maplibre-gl',
-                    'https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css',
+                    'squash-dashboard-app',
+                    $this->dashboard_url . '/build/' . $manifest['resources/css/app.css']['file'],
                     array(),
-                    '4.0.0'
-                );
-                
-                wp_enqueue_script(
-                    'maplibre-gl',
-                    'https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js',
-                    array(),
-                    '4.0.0',
-                    true
-                );
-                
-                // Enqueue Chart.js and plugins
-                wp_enqueue_script(
-                    'chartjs',
-                    'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js',
-                    array(),
-                    '4.4.0',
-                    true
-                );
-                
-                wp_enqueue_script(
-                    'chartjs-datalabels',
-                    'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js',
-                    array('chartjs'),
-                    '2.2.0',
-                    true
-                );
-                
-                // Font Awesome
-                wp_enqueue_style(
-                    'font-awesome',
-                    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-                    array(),
-                    '6.5.1'
+                    null
                 );
             }
+            
+            // Enqueue JS
+            if (isset($manifest['resources/js/dashboard.js'])) {
+                wp_enqueue_script(
+                    'squash-dashboard-js',
+                    $this->dashboard_url . '/build/' . $manifest['resources/js/dashboard.js']['file'],
+                    array(),
+                    null,
+                    true
+                );
+            }
+            
+            // Enqueue MapLibre GL JS and CSS
+            wp_enqueue_style(
+                'maplibre-gl',
+                'https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css',
+                array(),
+                '4.0.0'
+            );
+            
+            wp_enqueue_script(
+                'maplibre-gl',
+                'https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js',
+                array(),
+                '4.0.0',
+                true
+            );
+            
+            // Enqueue Chart.js and plugins
+            wp_enqueue_script(
+                'chartjs',
+                'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js',
+                array(),
+                '4.4.0',
+                true
+            );
+            
+            wp_enqueue_script(
+                'chartjs-datalabels',
+                'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js',
+                array('chartjs'),
+                '2.2.0',
+                true
+            );
+            
+            // Font Awesome
+            wp_enqueue_style(
+                'font-awesome',
+                'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
+                array(),
+                '6.5.1'
+            );
         }
     }
     
@@ -183,18 +198,4 @@ class Squash_Stats_Dashboard {
 
 // Initialize the plugin
 new Squash_Stats_Dashboard();
-
-/**
- * Activation hook - flush rewrite rules
- */
-register_activation_hook(__FILE__, function() {
-    flush_rewrite_rules();
-});
-
-/**
- * Deactivation hook - flush rewrite rules
- */
-register_deactivation_hook(__FILE__, function() {
-    flush_rewrite_rules();
-});
 

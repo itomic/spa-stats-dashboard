@@ -4,7 +4,7 @@
 # This script creates a zip file ready for WordPress installation
 
 PLUGIN_NAME="squash-stats-dashboard"
-VERSION="1.0.0"
+VERSION="1.1.0"
 OUTPUT_FILE="${PLUGIN_NAME}-${VERSION}.zip"
 
 echo "Packaging ${PLUGIN_NAME} plugin..."
@@ -14,7 +14,6 @@ mkdir -p temp/${PLUGIN_NAME}
 
 # Copy plugin files
 cp squash-stats-dashboard-plugin.php temp/${PLUGIN_NAME}/
-cp -r templates temp/${PLUGIN_NAME}/
 cp PLUGIN-README.md temp/${PLUGIN_NAME}/README.md
 
 # Create zip file
@@ -28,7 +27,16 @@ rm -rf temp
 echo "Plugin packaged successfully: ${OUTPUT_FILE}"
 echo ""
 echo "To install:"
-echo "1. Upload ${OUTPUT_FILE} to WordPress"
+echo "1. Upload ${OUTPUT_FILE} to WordPress (Plugins -> Add New -> Upload Plugin)"
 echo "2. Or extract to wp-content/plugins/"
 echo "3. Activate in WordPress Admin"
+echo ""
+echo "To use:"
+echo "1. Create a new WordPress page (or edit an existing one)"
+echo "2. Add the shortcode: [squash_stats_dashboard]"
+echo "3. Publish!"
+echo ""
+echo "Optional parameters:"
+echo "  [squash_stats_dashboard height='2000px']"
+echo "  [squash_stats_dashboard class='my-custom-class']"
 
