@@ -142,6 +142,15 @@ GPL v2 or later
 
 ## Changelog
 
+### 1.3.0 (2025-11-11) - MAJOR REFACTOR
+- **Switched to iframe-based embedding** for complete isolation
+- Eliminates all JavaScript and CSS conflicts with WordPress themes/plugins
+- Uses postMessage API for dynamic height adjustment (no scrollbars)
+- Dramatically simplified code (100 lines vs 213 lines)
+- Geolocation now works properly within iframe context
+- WordPress-recommended approach for embedding external content
+- No more HTML fetching, asset management, or caching complexity
+
 ### 1.2.3 (2025-11-11)
 - Fixed double initialization issue by removing duplicate JavaScript enqueueing
 - JavaScript is now only loaded once from the fetched HTML

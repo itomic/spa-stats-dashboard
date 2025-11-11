@@ -3,7 +3,7 @@ Contributors: itomicapps
 Tags: squash, statistics, dashboard, sports, analytics
 Requires at least: 5.0
 Tested up to: 6.7
-Stable tag: 1.2.3
+Stable tag: 1.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -99,6 +99,14 @@ Yes! The shortcode should work with most page builders that support WordPress sh
 4. Dashboard statistics overview
 
 == Changelog ==
+
+= 1.3.0 (2025-11-11) =
+* **MAJOR REFACTOR:** Switched to iframe-based embedding for complete isolation
+* Eliminates all JavaScript and CSS conflicts with WordPress themes/plugins
+* Uses postMessage API for dynamic height adjustment (no scrollbars)
+* Dramatically simplified code (100 lines vs 213 lines)
+* Geolocation now works properly within iframe context
+* WordPress-recommended approach for embedding external content
 
 = 1.2.3 (2025-11-11) =
 * Fixed double initialization issue by removing duplicate JavaScript enqueueing

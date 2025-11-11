@@ -267,6 +267,62 @@
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
     
     @vite(['resources/js/reports.js', 'resources/js/dashboard.js'])
+    
+    <!-- iframe Height Communication (for WordPress embedding) -->
+    <script>
+    (function() {
+        // Only send messages if we're in an iframe
+        if (window.parent === window) return;
+        
+        function sendHeightToParent() {
+            const height = Math.max(
+                document.body.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.clientHeight,
+                document.documentElement.scrollHeight,
+                document.documentElement.offsetHeight
+            );
+            
+            window.parent.postMessage({
+                type: 'squash-dashboard-height',
+                height: height
+            }, '*');
+            
+            console.log('Sent height to parent:', height);
+        }
+        
+        // Send initial height when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', sendHeightToParent);
+        } else {
+            sendHeightToParent();
+        }
+        
+        // Send height when everything is loaded (images, charts, etc.)
+        window.addEventListener('load', function() {
+            sendHeightToParent();
+            // Send again after a delay to catch dynamic content
+            setTimeout(sendHeightToParent, 1000);
+            setTimeout(sendHeightToParent, 3000);
+        });
+        
+        // Send height when window resizes
+        window.addEventListener('resize', sendHeightToParent);
+        
+        // Observe DOM changes (for dynamically loaded content)
+        if (typeof MutationObserver !== 'undefined') {
+            const observer = new MutationObserver(function() {
+                sendHeightToParent();
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true
+            });
+        }
+    })();
+    </script>
 </body>
 </html>
 

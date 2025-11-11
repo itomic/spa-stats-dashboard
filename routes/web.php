@@ -8,10 +8,27 @@ Route::get('/', function () {
 });
 
 // Serve build assets with CORS headers
-Route::get('/build/{path}', function ($path) {
+// Use Request to get the full path including slashes
+Route::get('/build/{path?}', function (Illuminate\Http\Request $request) {
+    // Get the full request path after /build/
+    $fullPath = $request->path(); // e.g., "build/assets/dashboard.js"
+    $path = substr($fullPath, 6); // Remove "build/" prefix
+    
+    if (empty($path)) {
+        abort(404);
+    }
+    
     $filePath = public_path('build/' . $path);
     
-    if (!file_exists($filePath)) {
+    // Security: prevent directory traversal
+    $realPath = realpath($filePath);
+    $buildPath = realpath(public_path('build'));
+    
+    if (!$realPath || !$buildPath || strpos($realPath, $buildPath) !== 0) {
+        abort(404);
+    }
+    
+    if (!file_exists($filePath) || !is_file($filePath)) {
         abort(404);
     }
     

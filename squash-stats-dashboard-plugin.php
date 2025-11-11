@@ -3,7 +3,7 @@
  * Plugin Name: Squash Stats Dashboard
  * Plugin URI: https://stats.squashplayers.app
  * Description: Embeds the Squash Stats Dashboard from stats.squashplayers.app into WordPress using shortcode [squash_stats_dashboard]
- * Version: 1.2.3
+ * Version: 1.3.0
  * Author: Itomic Apps
  * Author URI: https://www.itomic.com.au
  * License: GPL v2 or later
@@ -22,148 +22,83 @@ require_once plugin_dir_path(__FILE__) . 'includes/class-plugin-updater.php';
 class Squash_Stats_Dashboard {
     
     private $dashboard_url = 'https://stats.squashplayers.app';
-    private $assets_enqueued = false;
     
     public function __construct() {
         // Register shortcode
         add_shortcode('squash_stats_dashboard', array($this, 'render_dashboard_shortcode'));
-        
-        // Enqueue assets when shortcode is used
-        add_action('wp_enqueue_scripts', array($this, 'maybe_enqueue_dashboard_assets'));
     }
     
     /**
-     * Render the dashboard shortcode
+     * Render the dashboard shortcode using iframe
+     * 
+     * This approach provides complete isolation between the dashboard and WordPress:
+     * - No JavaScript conflicts
+     * - No CSS conflicts
+     * - No global variable pollution
+     * - Geolocation works properly
+     * - Uses postMessage API for dynamic height adjustment (no scrollbars)
      */
     public function render_dashboard_shortcode($atts) {
         // Parse shortcode attributes
         $atts = shortcode_atts(array(
-            'height' => 'auto', // Allow custom height
             'class' => '',      // Allow custom CSS classes
         ), $atts);
         
-        // Ensure assets are enqueued
-        $this->enqueue_dashboard_assets();
+        // Generate unique ID for this iframe instance
+        $iframe_id = 'squash-dashboard-' . uniqid();
         
-        // Get dashboard content
-        $content = $this->get_dashboard_content();
-        
-        // Wrap in container with optional custom class
-        $wrapper_class = 'squash-dashboard-wrapper ' . esc_attr($atts['class']);
-        $height_style = $atts['height'] !== 'auto' ? 'min-height: ' . esc_attr($atts['height']) . ';' : '';
-        
-        return sprintf(
-            '<div class="%s" style="%s">%s</div>',
-            $wrapper_class,
-            $height_style,
-            $content
+        // Build iframe HTML
+        $html = sprintf(
+            '<iframe 
+                id="%s"
+                src="%s" 
+                width="100%%" 
+                style="border: none; display: block; overflow: hidden; min-height: 500px;"
+                frameborder="0"
+                scrolling="no"
+                class="squash-dashboard-iframe %s"
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups"
+                title="Squash Stats Dashboard">
+            </iframe>',
+            esc_attr($iframe_id),
+            esc_url($this->dashboard_url),
+            esc_attr($atts['class'])
         );
-    }
-    
-    /**
-     * Check if we need to enqueue assets (when shortcode is present)
-     */
-    public function maybe_enqueue_dashboard_assets() {
-        global $post;
         
-        // Check if the current post/page contains our shortcode
-        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'squash_stats_dashboard')) {
-            $this->enqueue_dashboard_assets();
-        }
-    }
-    
-    /**
-     * Enqueue dashboard assets
-     * 
-     * NOTE: We only enqueue CSS here. JavaScript is already included in the fetched HTML
-     * from stats.squashplayers.app to avoid double initialization.
-     */
-    public function enqueue_dashboard_assets() {
-        // Prevent multiple enqueueing
-        if ($this->assets_enqueued) {
-            return;
-        }
-        
-        $this->assets_enqueued = true;
-        
-        // Get the manifest to find the hashed asset filenames
-        $manifest_url = $this->dashboard_url . '/build/manifest.json';
-        $manifest = $this->fetch_manifest($manifest_url);
-        
-        if ($manifest) {
-            // Enqueue CSS only - JS is already in the HTML
-            if (isset($manifest['resources/css/app.css'])) {
-                wp_enqueue_style(
-                    'squash-dashboard-app',
-                    $this->dashboard_url . '/build/' . $manifest['resources/css/app.css']['file'],
-                    array(),
-                    null
-                );
-            }
-            
-            // Enqueue MapLibre GL CSS only
-            wp_enqueue_style(
-                'maplibre-gl',
-                'https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.css',
-                array(),
-                '4.0.0'
-            );
-            
-            // Font Awesome
-            wp_enqueue_style(
-                'font-awesome',
-                'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-                array(),
-                '6.5.1'
-            );
-        }
-    }
-    
-    /**
-     * Fetch and cache the Vite manifest
-     */
-    private function fetch_manifest($url) {
-        $transient_key = 'squash_dashboard_manifest';
-        $manifest = get_transient($transient_key);
-        
-        if (false === $manifest) {
-            $response = wp_remote_get($url);
-            
-            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
-                $manifest = json_decode(wp_remote_retrieve_body($response), true);
-                // Cache for 1 hour
-                set_transient($transient_key, $manifest, HOUR_IN_SECONDS);
-            }
-        }
-        
-        return $manifest;
-    }
-    
-    /**
-     * Fetch dashboard HTML content
-     */
-    public function get_dashboard_content() {
-        $transient_key = 'squash_dashboard_content';
-        $content = get_transient($transient_key);
-        
-        if (false === $content) {
-            $response = wp_remote_get($this->dashboard_url);
-            
-            if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
-                $html = wp_remote_retrieve_body($response);
+        // Add postMessage listener for dynamic height adjustment
+        $html .= sprintf(
+            '<script>
+            (function() {
+                var iframe = document.getElementById("%s");
                 
-                // Extract the body content (between <body> tags)
-                preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $matches);
-                $content = isset($matches[1]) ? $matches[1] : '';
+                // Listen for height messages from the iframe
+                window.addEventListener("message", function(event) {
+                    // Security: verify origin
+                    if (event.origin !== "https://stats.squashplayers.app") {
+                        return;
+                    }
+                    
+                    // Check if this is a height update message
+                    if (event.data && event.data.type === "squash-dashboard-height") {
+                        iframe.style.height = event.data.height + "px";
+                        console.log("Dashboard height updated:", event.data.height);
+                    }
+                });
                 
-                // No URL replacement needed - Laravel app already outputs absolute URLs
-                
-                // Cache for 5 minutes
-                set_transient($transient_key, $content, 5 * MINUTE_IN_SECONDS);
-            }
-        }
+                // Fallback: if no height message received after 5 seconds, set a default height
+                setTimeout(function() {
+                    if (iframe.style.height === "" || iframe.style.height === "500px") {
+                        iframe.style.height = "3000px";
+                        console.log("Dashboard height fallback applied");
+                    }
+                }, 5000);
+            })();
+            </script>',
+            esc_js($iframe_id)
+        );
         
-        return $content;
+        return $html;
     }
 }
 
@@ -177,4 +112,3 @@ if (is_admin()) {
         'itomicspaceman/spa-stats-dashboard'
     );
 }
-
