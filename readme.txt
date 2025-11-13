@@ -39,7 +39,7 @@ The Squash Stats Dashboard plugin allows you to embed comprehensive squash venue
 
 This plugin pulls data from a Laravel application hosted at stats.squashplayers.app. The full source code for both the plugin and the Laravel dashboard is available on GitHub:
 
-* Plugin & Dashboard Source: [https://github.com/itomicspaceman/spa-stats-dashboard](https://github.com/itomicspaceman/spa-stats-dashboard)
+* Plugin & Dashboard Source: [https://github.com/itomic/spa-stats-dashboard](https://github.com/itomic/spa-stats-dashboard)
 
 The dashboard is built using Laravel 12 and Vite for asset compilation. See the GitHub repository for build instructions.
 
@@ -115,7 +115,7 @@ The data is pulled from stats.squashplayers.app, which aggregates squash venue a
 
 = Is the source code available? =
 
-Yes! The full source code is available on GitHub at https://github.com/itomicspaceman/spa-stats-dashboard
+Yes! The full source code is available on GitHub at https://github.com/itomic/spa-stats-dashboard
 
 = Does this work with page builders? =
 

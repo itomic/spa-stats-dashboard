@@ -1,7 +1,7 @@
 # Create GitHub Release v1.2.0
 # This script creates a GitHub release and uploads the plugin ZIP
 
-$owner = "itomicspaceman"
+$owner = "itomic"
 $repo = "spa-stats-dashboard"
 $tag = "v1.2.0"
 $name = "v1.2.0 - Auto-Update Support"

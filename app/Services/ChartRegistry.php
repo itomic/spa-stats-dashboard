@@ -152,6 +152,16 @@ class ChartRegistry
                 'thumbnail' => '/images/charts/outdoor-courts.png',
                 'relevant_levels' => ['world', 'continent', 'region'], // Not for single country/state
             ],
+            'countries-without-venues' => [
+                'id' => 'countries-without-venues',
+                'name' => 'Countries Without Squash Venues',
+                'description' => 'Interactive choropleth map showing countries and dependencies without any squash venues',
+                'component' => 'charts.countries-without-venues',
+                'api_endpoints' => ['/countries-without-venues'],
+                'category' => 'map',
+                'thumbnail' => '/images/charts/countries-without-venues.png',
+                'relevant_levels' => ['world'], // Only at world level
+            ],
         ];
     }
 

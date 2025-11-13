@@ -35,6 +35,14 @@ Route::prefix('squash')->middleware("throttle:{$rateLimit}")->group(function () 
     Route::get('/venues-by-state', [SquashStatsController::class, 'venuesByState']);
     Route::get('/website-stats', [SquashStatsController::class, 'websiteStats']);
     Route::get('/top-venues-by-courts', [SquashStatsController::class, 'topVenuesByCourts']);
+    Route::get('/countries-without-venues', [SquashStatsController::class, 'countriesWithoutVenues']);
+    Route::get('/venues-with-elevation', [SquashStatsController::class, 'venuesWithElevation']);
+    Route::get('/extreme-latitude-venues', [SquashStatsController::class, 'extremeLatitudeVenues']);
+    Route::get('/hotels-and-resorts', [SquashStatsController::class, 'hotelsAndResorts']);
+    Route::get('/countries-with-venues-stats', [SquashStatsController::class, 'countriesWithVenuesStats']);
+    Route::get('/venues-with-unknown-courts', [SquashStatsController::class, 'venuesWithUnknownCourts']);
+    Route::get('/country-club-100-percent', [SquashStatsController::class, 'countryClub100Percent']);
+    Route::get('/countries-wordcloud', [SquashStatsController::class, 'countriesByVenuesWordCloud']);
     
     // Geographic search endpoints
     Route::get('/search-areas', [GeographicSearchController::class, 'search']);

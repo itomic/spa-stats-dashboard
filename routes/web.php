@@ -18,6 +18,42 @@ Route::get('/venue-types', function () {
     return view('dashboards.venue-types');
 })->name('dashboard.venue-types');
 
+Route::get('/trivia', function () {
+    return view('trivia.index');
+})->name('trivia.index');
+
+Route::get('/trivia/countries-without-venues', function () {
+    return view('trivia.index', ['activeMap' => 'countries-without-venues']);
+})->name('trivia.countries-without-venues');
+
+Route::get('/trivia/high-altitude-venues', function () {
+    return view('trivia.index', ['activeMap' => 'highest-venues']);
+})->name('trivia.high-altitude-venues');
+
+Route::get('/trivia/extreme-latitude-venues', function () {
+    return view('trivia.index', ['activeMap' => 'extreme-latitude']);
+})->name('trivia.extreme-latitude-venues');
+
+Route::get('/trivia/hotels-resorts', function () {
+    return view('trivia.index', ['activeMap' => 'hotels-resorts']);
+})->name('trivia.hotels-resorts');
+
+Route::get('/trivia/countries-stats', function () {
+    return view('trivia.index', ['activeMap' => 'countries-stats']);
+})->name('trivia.countries-stats');
+
+Route::get('/trivia/unknown-courts', function () {
+    return view('trivia.index', ['activeMap' => 'unknown-courts']);
+})->name('trivia.unknown-courts');
+
+Route::get('/trivia/country-club-100', function () {
+    return view('trivia.index', ['activeMap' => 'country-club-100']);
+})->name('trivia.country-club-100');
+
+Route::get('/trivia/countries-wordcloud', function () {
+    return view('trivia.index', ['activeMap' => 'countries-wordcloud']);
+})->name('trivia.countries-wordcloud');
+
 // Dynamic chart rendering
 Route::get('/render', [ChartController::class, 'render'])->name('charts.render');
 

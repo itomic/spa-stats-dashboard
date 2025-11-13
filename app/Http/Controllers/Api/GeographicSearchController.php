@@ -27,7 +27,8 @@ class GeographicSearchController extends Controller
 
         $cacheKey = "geographic_search:" . strtolower($query);
         
-        $results = Cache::remember($cacheKey, 3600, function () use ($query) {
+        // Cache for 24 hours (86400 seconds)
+        $results = Cache::remember($cacheKey, 86400, function () use ($query) {
             $results = [];
             
             // Search continents
@@ -157,7 +158,8 @@ class GeographicSearchController extends Controller
 
         $cacheKey = "filter_details:{$filter}";
         
-        $details = Cache::remember($cacheKey, 3600, function () use ($type, $code) {
+        // Cache for 24 hours (86400 seconds)
+        $details = Cache::remember($cacheKey, 86400, function () use ($type, $code) {
             switch ($type) {
                 case 'continent':
                     $continent = DB::connection('squash_remote')

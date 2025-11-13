@@ -8,7 +8,7 @@
  * Author URI: https://www.itomic.com.au
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Update URI: https://github.com/itomicspaceman/spa-stats-dashboard
+ * Update URI: https://github.com/itomic/spa-stats-dashboard
  */
 
 // Exit if accessed directly

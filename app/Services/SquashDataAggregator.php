@@ -648,5 +648,421 @@ class SquashDataAggregator
             ],
         ];
     }
+
+    /**
+     * Get venues with elevation data for highest venues map.
+     *
+     * @return array
+     */
+    public function venuesWithElevation(): array
+    {
+        $venues = DB::connection('squash_remote')
+            ->table('venues')
+            ->join('countries', 'venues.country_id', '=', 'countries.id')
+            ->where('venues.status', '1')
+            ->whereNotNull('venues.latitude')
+            ->whereNotNull('venues.longitude')
+            ->whereNotNull('venues.elevation')
+            ->where('venues.latitude', '!=', 0)
+            ->where('venues.longitude', '!=', 0)
+            ->where('venues.elevation', '!=', 0)
+            ->select([
+                'venues.id',
+                'venues.name',
+                'venues.physical_address',
+                'venues.suburb',
+                'venues.state',
+                'venues.latitude',
+                'venues.longitude',
+                'venues.elevation',
+                'venues.no_of_courts',
+                'countries.name as country_name',
+                'countries.alpha_2_code as country_code',
+            ])
+            ->orderBy('venues.elevation', 'desc')
+            ->get();
+
+        return $venues->map(function ($venue) {
+            return [
+                'id' => $venue->id,
+                'name' => $venue->name,
+                'address' => $venue->physical_address,
+                'suburb' => $venue->suburb,
+                'state' => $venue->state,
+                'country' => $venue->country_name,
+                'country_code' => $venue->country_code,
+                'latitude' => (float) $venue->latitude,
+                'longitude' => (float) $venue->longitude,
+                'elevation' => (int) $venue->elevation,
+                'courts' => $venue->no_of_courts ?? 'Unknown',
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get venues at extreme latitudes (most northerly and southerly).
+     *
+     * @return array
+     */
+    public function extremeLatitudeVenues(): array
+    {
+        // Get top 20 most northerly venues (highest latitude)
+        $northerly = DB::connection('squash_remote')
+            ->table('venues')
+            ->join('countries', 'venues.country_id', '=', 'countries.id')
+            ->where('venues.status', '1')
+            ->whereNotNull('venues.latitude')
+            ->whereNotNull('venues.longitude')
+            ->where('venues.latitude', '!=', 0)
+            ->where('venues.longitude', '!=', 0)
+            ->select([
+                'venues.id',
+                'venues.name',
+                'venues.physical_address',
+                'venues.suburb',
+                'venues.state',
+                'venues.latitude',
+                'venues.longitude',
+                'venues.no_of_courts',
+                'countries.name as country_name',
+                'countries.alpha_2_code as country_code',
+            ])
+            ->orderBy('venues.latitude', 'desc')
+            ->limit(20)
+            ->get();
+
+        // Get top 20 most southerly venues (lowest latitude)
+        $southerly = DB::connection('squash_remote')
+            ->table('venues')
+            ->join('countries', 'venues.country_id', '=', 'countries.id')
+            ->where('venues.status', '1')
+            ->whereNotNull('venues.latitude')
+            ->whereNotNull('venues.longitude')
+            ->where('venues.latitude', '!=', 0)
+            ->where('venues.longitude', '!=', 0)
+            ->select([
+                'venues.id',
+                'venues.name',
+                'venues.physical_address',
+                'venues.suburb',
+                'venues.state',
+                'venues.latitude',
+                'venues.longitude',
+                'venues.no_of_courts',
+                'countries.name as country_name',
+                'countries.alpha_2_code as country_code',
+            ])
+            ->orderBy('venues.latitude', 'asc')
+            ->limit(20)
+            ->get();
+
+        return [
+            'northerly' => $northerly->map(function ($venue) {
+                return [
+                    'id' => $venue->id,
+                    'name' => $venue->name,
+                    'address' => $venue->physical_address,
+                    'suburb' => $venue->suburb,
+                    'state' => $venue->state,
+                    'country' => $venue->country_name,
+                    'country_code' => $venue->country_code,
+                    'latitude' => (float) $venue->latitude,
+                    'longitude' => (float) $venue->longitude,
+                    'courts' => $venue->no_of_courts ?? 'Unknown',
+                ];
+            })->toArray(),
+            'southerly' => $southerly->map(function ($venue) {
+                return [
+                    'id' => $venue->id,
+                    'name' => $venue->name,
+                    'address' => $venue->physical_address,
+                    'suburb' => $venue->suburb,
+                    'state' => $venue->state,
+                    'country' => $venue->country_name,
+                    'country_code' => $venue->country_code,
+                    'latitude' => (float) $venue->latitude,
+                    'longitude' => (float) $venue->longitude,
+                    'courts' => $venue->no_of_courts ?? 'Unknown',
+                ];
+            })->toArray(),
+        ];
+    }
+
+    /**
+     * Get hotels and resorts with squash courts.
+     *
+     * @return array
+     */
+    public function hotelsAndResorts(): array
+    {
+        $venues = DB::connection('squash_remote')
+            ->table('venues')
+            ->join('countries', 'venues.country_id', '=', 'countries.id')
+            ->join('venue_categories', 'venues.category_id', '=', 'venue_categories.id')
+            ->join('regions', 'countries.region_id', '=', 'regions.id')
+            ->join('continents', 'regions.continent_id', '=', 'continents.id')
+            ->where('venues.status', '1')
+            ->where(function($query) {
+                $query->where('venue_categories.name', 'LIKE', '%Hotel%')
+                      ->orWhere('venue_categories.name', 'LIKE', '%Resort%');
+            })
+            ->whereNotNull('venues.latitude')
+            ->whereNotNull('venues.longitude')
+            ->where('venues.latitude', '!=', 0)
+            ->where('venues.longitude', '!=', 0)
+            ->select([
+                'venues.id',
+                'venues.name',
+                'venues.physical_address',
+                'venues.suburb',
+                'venues.state',
+                'venues.latitude',
+                'venues.longitude',
+                'venues.no_of_courts',
+                'countries.name as country_name',
+                'countries.alpha_2_code as country_code',
+                'venue_categories.name as category_name',
+                'continents.id as continent_id',
+                'continents.name as continent_name',
+            ])
+            ->orderBy('venues.name')
+            ->get();
+
+        return $venues->map(function ($venue) {
+            return [
+                'id' => $venue->id,
+                'name' => $venue->name,
+                'address' => $venue->physical_address,
+                'suburb' => $venue->suburb,
+                'state' => $venue->state,
+                'country' => $venue->country_name,
+                'country_code' => $venue->country_code,
+                'category' => $venue->category_name,
+                'continent_id' => $venue->continent_id,
+                'continent_name' => $venue->continent_name,
+                'latitude' => (float) $venue->latitude,
+                'longitude' => (float) $venue->longitude,
+                'courts' => $venue->no_of_courts ?? 'Unknown',
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get countries with venues including population and land area statistics.
+     *
+     * @return array
+     */
+    public function countriesWithVenuesStats(): array
+    {
+        $countries = DB::connection('squash_remote')
+            ->table('countries')
+            ->leftJoin('venues', function($join) {
+                $join->on('countries.id', '=', 'venues.country_id')
+                     ->where('venues.status', '=', '1');
+            })
+            ->select([
+                'countries.id',
+                'countries.name',
+                'countries.population',
+                'countries.landarea',
+                DB::raw('COUNT(DISTINCT venues.id) as venue_count'),
+                DB::raw('SUM(CASE WHEN venues.no_of_courts IS NOT NULL THEN venues.no_of_courts ELSE 0 END) as total_courts')
+            ])
+            ->groupBy('countries.id', 'countries.name', 'countries.population', 'countries.landarea')
+            ->havingRaw('COUNT(DISTINCT venues.id) > 0')
+            ->orderBy('countries.name')
+            ->get();
+
+        return $countries->map(function ($country) {
+            $population = (float) $country->population;
+            $area = (float) $country->landarea;
+            $venues = (int) $country->venue_count;
+            $courts = (int) $country->total_courts;
+
+            return [
+                'id' => $country->id,
+                'name' => $country->name,
+                'population' => $population,
+                'area_sq_km' => $area,
+                'venues' => $venues,
+                'courts' => $courts,
+                // Calculated ratios
+                'venues_per_population' => $population > 0 ? ($venues / $population) * 1000000 : 0, // per million
+                'courts_per_population' => $population > 0 ? ($courts / $population) * 1000000 : 0, // per million
+                'venues_per_area' => $area > 0 ? ($venues / $area) * 1000 : 0, // per 1000 sq km
+                'courts_per_area' => $area > 0 ? ($courts / $area) * 1000 : 0, // per 1000 sq km
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get venues with unknown number of courts.
+     *
+     * @return array
+     */
+    public function venuesWithUnknownCourts(): array
+    {
+        $venues = DB::connection('squash_remote')
+            ->table('venues')
+            ->join('countries', 'venues.country_id', '=', 'countries.id')
+            ->join('regions', 'countries.region_id', '=', 'regions.id')
+            ->join('continents', 'regions.continent_id', '=', 'continents.id')
+            ->leftJoin('venue_categories', 'venues.category_id', '=', 'venue_categories.id')
+            ->where('venues.status', '1')
+            ->where(function($query) {
+                $query->whereNull('venues.no_of_courts')
+                      ->orWhere('venues.no_of_courts', '=', 0);
+            })
+            ->whereNotNull('venues.latitude')
+            ->whereNotNull('venues.longitude')
+            ->where('venues.latitude', '!=', 0)
+            ->where('venues.longitude', '!=', 0)
+            ->select([
+                'venues.id',
+                'venues.name',
+                'venues.physical_address',
+                'venues.suburb',
+                'venues.state',
+                'venues.latitude',
+                'venues.longitude',
+                'countries.name as country_name',
+                'countries.alpha_2_code as country_code',
+                'venue_categories.name as category_name',
+                'continents.id as continent_id',
+                'continents.name as continent_name',
+            ])
+            ->orderBy('venues.name')
+            ->get();
+
+        return $venues->map(function ($venue) {
+            return [
+                'id' => $venue->id,
+                'name' => $venue->name,
+                'address' => $venue->physical_address,
+                'suburb' => $venue->suburb,
+                'state' => $venue->state,
+                'country' => $venue->country_name,
+                'country_code' => $venue->country_code,
+                'category' => $venue->category_name ?? 'Unknown',
+                'continent_id' => $venue->continent_id,
+                'continent_name' => $venue->continent_name,
+                'latitude' => (float) $venue->latitude,
+                'longitude' => (float) $venue->longitude,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get the 100% Country Club data - countries with complete court count information.
+     *
+     * @return array
+     */
+    public function countryClub100Percent(): array
+    {
+        $countries = DB::connection('squash_remote')
+            ->table('countries')
+            ->leftJoin('venues', function($join) {
+                $join->on('countries.id', '=', 'venues.country_id')
+                     ->where('venues.status', '=', '1');
+            })
+            ->select([
+                'countries.id',
+                'countries.name',
+                DB::raw('COUNT(DISTINCT venues.id) as total_venues'),
+                DB::raw('COUNT(DISTINCT CASE WHEN venues.no_of_courts IS NOT NULL AND venues.no_of_courts > 0 THEN venues.id END) as venues_with_courts'),
+                DB::raw('SUM(CASE WHEN venues.no_of_courts IS NOT NULL THEN venues.no_of_courts ELSE 0 END) as total_courts')
+            ])
+            ->groupBy('countries.id', 'countries.name')
+            ->havingRaw('COUNT(DISTINCT venues.id) > 0')
+            ->orderByRaw('(COUNT(DISTINCT CASE WHEN venues.no_of_courts IS NOT NULL AND venues.no_of_courts > 0 THEN venues.id END) / COUNT(DISTINCT venues.id) * 100) DESC')
+            ->orderBy('countries.name')
+            ->get();
+
+        return $countries->map(function ($country) {
+            $totalVenues = (int) $country->total_venues;
+            $venuesWithCourts = (int) $country->venues_with_courts;
+            $totalCourts = (int) $country->total_courts;
+            
+            $percentage = $totalVenues > 0 ? ($venuesWithCourts / $totalVenues) * 100 : 0;
+            $courtsPerVenue = $venuesWithCourts > 0 ? $totalCourts / $venuesWithCourts : 0;
+
+            return [
+                'id' => $country->id,
+                'name' => $country->name,
+                'total_venues' => $totalVenues,
+                'venues_with_courts' => $venuesWithCourts,
+                'total_courts' => $totalCourts,
+                'percentage' => round($percentage, 1),
+                'courts_per_venue' => round($courtsPerVenue, 2),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get countries by number of venues for word cloud.
+     *
+     * @return array
+     */
+    public function countriesByVenuesWordCloud(): array
+    {
+        $countries = DB::connection('squash_remote')
+            ->table('countries')
+            ->join('venues', function($join) {
+                $join->on('countries.id', '=', 'venues.country_id')
+                     ->where('venues.status', '=', '1');
+            })
+            ->select([
+                'countries.name',
+                DB::raw('CAST(COUNT(DISTINCT venues.id) AS UNSIGNED) as venue_count')
+            ])
+            ->groupBy('countries.id', 'countries.name')
+            ->havingRaw('COUNT(DISTINCT venues.id) > 0')
+            ->orderBy('venue_count', 'desc')
+            ->get();
+
+        return $countries->map(function ($country) {
+            return [
+                'key' => $country->name,
+                'value' => intval($country->venue_count), // Use intval() for more reliable conversion
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get countries without any squash venues.
+     *
+     * @return array
+     */
+    public function countriesWithoutVenues(): array
+    {
+        // Get all countries
+        $allCountries = DB::connection('squash_remote')
+            ->table('countries')
+            ->select('id', 'name', 'alpha_2_code', 'alpha_3_code')
+            ->orderBy('name')
+            ->get();
+
+        // Get countries that have at least one active venue
+        $countriesWithVenues = DB::connection('squash_remote')
+            ->table('venues')
+            ->where('status', '1')
+            ->distinct()
+            ->pluck('country_id')
+            ->toArray();
+
+        // Filter to get countries without venues
+        $countriesWithoutVenues = $allCountries->filter(function ($country) use ($countriesWithVenues) {
+            return !in_array($country->id, $countriesWithVenues);
+        });
+
+        return $countriesWithoutVenues->values()->map(function ($country) {
+            return [
+                'id' => $country->id,
+                'name' => $country->name,
+                'alpha_2_code' => $country->alpha_2_code,
+                'alpha_3_code' => $country->alpha_3_code,
+            ];
+        })->toArray();
+    }
 }
 

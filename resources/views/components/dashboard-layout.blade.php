@@ -1,4 +1,4 @@
-@props(['title' => 'Squash Stats Dashboard', 'hero' => null, 'showFooter' => true])
+@props(['title' => 'Squash Stats Dashboard', 'hero' => null, 'showFooter' => true, 'showSearch' => true])
 
 <!DOCTYPE html>
 <html lang="en">
@@ -67,7 +67,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ route('dashboard.world') }}">
-                <i class="fas fa-chart-line me-2"></i>Squash Stats
+                <i class="fas fa-chart-line me-2"></i>Squash Venue & Court Stats
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -76,17 +76,12 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('dashboard.world') ? 'active' : '' }}" href="{{ route('dashboard.world') }}">
-                            <i class="fas fa-globe me-1"></i>World Stats
+                            <i class="fas fa-globe me-1"></i>Stats
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('dashboard.country') ? 'active' : '' }}" href="{{ route('dashboard.country') }}">
-                            <i class="fas fa-flag me-1"></i>Country Stats
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('dashboard.venue-types') ? 'active' : '' }}" href="{{ route('dashboard.venue-types') }}">
-                            <i class="fas fa-building me-1"></i>Venue Types
+                        <a class="nav-link {{ request()->routeIs('trivia.index') ? 'active' : '' }}" href="{{ route('trivia.index') }}">
+                            <i class="fas fa-lightbulb me-1"></i>Trivia
                         </a>
                     </li>
                     <li class="nav-item">
@@ -94,18 +89,15 @@
                             <i class="fas fa-th me-1"></i>Chart Gallery
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('geographic-areas') ? 'active' : '' }}" href="{{ route('geographic-areas') }}">
-                            <i class="fas fa-map-marked-alt me-1"></i>Geographic Areas
-                        </a>
-                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
+    @if($showSearch)
     <!-- Geographic Search -->
     <x-geographic-search />
+    @endif
 
     @if($hero)
     <!-- Hero Section -->
@@ -140,6 +132,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
     <script src="https://unpkg.com/maplibre-gl@4.0.0/dist/maplibre-gl.js"></script>
     
     @vite(['resources/js/reports.js', 'resources/js/dashboard.js'])

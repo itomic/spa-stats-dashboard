@@ -262,4 +262,116 @@ class SquashStatsController extends Controller
 
         return response()->json($data);
     }
+
+    /**
+     * Get countries without any squash venues.
+     */
+    public function countriesWithoutVenues(): JsonResponse
+    {
+        $cacheKey = 'squash:countries_without_venues';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->countriesWithoutVenues();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Get venues with elevation data.
+     */
+    public function venuesWithElevation(): JsonResponse
+    {
+        $cacheKey = 'squash:venues_with_elevation';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->venuesWithElevation();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Get venues at extreme latitudes (most northerly and southerly).
+     */
+    public function extremeLatitudeVenues(): JsonResponse
+    {
+        $cacheKey = 'squash:extreme_latitude_venues';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->extremeLatitudeVenues();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Get hotels and resorts with squash courts.
+     */
+    public function hotelsAndResorts(): JsonResponse
+    {
+        $cacheKey = 'squash:hotels_and_resorts';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->hotelsAndResorts();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Get countries with venues including population and area statistics.
+     */
+    public function countriesWithVenuesStats(): JsonResponse
+    {
+        $cacheKey = 'squash:countries_with_venues_stats';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->countriesWithVenuesStats();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Get venues with unknown number of courts.
+     */
+    public function venuesWithUnknownCourts(): JsonResponse
+    {
+        $cacheKey = 'squash:venues_with_unknown_courts';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->venuesWithUnknownCourts();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Get the 100% Country Club data.
+     */
+    public function countryClub100Percent(): JsonResponse
+    {
+        $cacheKey = 'squash:country_club_100_percent';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->countryClub100Percent();
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Get countries by venues for word cloud.
+     */
+    public function countriesByVenuesWordCloud(): JsonResponse
+    {
+        $cacheKey = 'squash:countries_wordcloud';
+
+        $data = Cache::remember($cacheKey, 10800, function () {
+            return $this->aggregator->countriesByVenuesWordCloud();
+        });
+
+        return response()->json($data);
+    }
 }
