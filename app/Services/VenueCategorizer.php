@@ -16,6 +16,9 @@ class VenueCategorizer
     protected GooglePlacesTextSearchService $textSearchService;
     protected ?GoogleTranslateService $translateService;
     protected VenueContextAnalyzer $contextAnalyzer;
+    protected ?CourtCountSearcher $courtCountSearcher;
+    protected ?CourtCountAnalyzer $courtCountAnalyzer;
+    protected ?CourtCountUpdater $courtCountUpdater;
 
     public function __construct(
         GooglePlacesService $googlePlacesService,
@@ -24,7 +27,10 @@ class VenueCategorizer
         NewCategoryDetector $newCategoryDetector,
         GooglePlacesTextSearchService $textSearchService,
         VenueContextAnalyzer $contextAnalyzer,
-        ?GoogleTranslateService $translateService = null
+        ?GoogleTranslateService $translateService = null,
+        ?CourtCountSearcher $courtCountSearcher = null,
+        ?CourtCountAnalyzer $courtCountAnalyzer = null,
+        ?CourtCountUpdater $courtCountUpdater = null
     ) {
         $this->googlePlacesService = $googlePlacesService;
         $this->typeMapper = $typeMapper;
@@ -33,6 +39,29 @@ class VenueCategorizer
         $this->textSearchService = $textSearchService;
         $this->contextAnalyzer = $contextAnalyzer;
         $this->translateService = $translateService;
+        
+        // Instantiate court count services if not provided (Laravel auto-resolution)
+        // Wrap in try-catch in case services can't be created (e.g., missing API keys)
+        try {
+            $this->courtCountSearcher = $courtCountSearcher ?? app(CourtCountSearcher::class);
+        } catch (\Exception $e) {
+            $this->courtCountSearcher = null;
+            Log::warning('CourtCountSearcher could not be instantiated', ['error' => $e->getMessage()]);
+        }
+        
+        try {
+            $this->courtCountAnalyzer = $courtCountAnalyzer ?? app(CourtCountAnalyzer::class);
+        } catch (\Exception $e) {
+            $this->courtCountAnalyzer = null;
+            Log::warning('CourtCountAnalyzer could not be instantiated', ['error' => $e->getMessage()]);
+        }
+        
+        try {
+            $this->courtCountUpdater = $courtCountUpdater ?? app(CourtCountUpdater::class);
+        } catch (\Exception $e) {
+            $this->courtCountUpdater = null;
+            Log::warning('CourtCountUpdater could not be instantiated', ['error' => $e->getMessage()]);
+        }
         
         // Inject translate service into mapper if available
         if ($this->translateService && $this->translateService->isConfigured()) {
@@ -73,6 +102,11 @@ class VenueCategorizer
             'name_updated' => false,
             'old_name' => null,
             'new_name' => null,
+            'court_count_searched' => false,
+            'court_count_found' => null,
+            'court_count_confidence' => null,
+            'court_count_updated' => false,
+            'court_count_flagged_for_deletion' => false,
         ];
 
         // Validate venue has Google Place ID
@@ -225,6 +259,94 @@ class VenueCategorizer
             }
         }
 
+        // Step 4: Count courts if needed (no_of_courts is 0 or null)
+        if (($venue->no_of_courts === null || $venue->no_of_courts == 0) && 
+            $this->courtCountSearcher && 
+            $this->courtCountAnalyzer && 
+            $this->courtCountUpdater) {
+            
+            $result['court_count_searched'] = true;
+            
+            // Use OpenAI's native web search
+            $venueWebsite = $googlePlacesData['website'] ?? $googlePlacesData['websiteUri'] ?? null;
+            $courtCountResult = $this->courtCountAnalyzer->analyzeCourtCount(
+                $venue->name,
+                $venue->physical_address,
+                $venueWebsite
+            );
+            
+            // Add metadata
+            $courtCountResult['search_api_used'] = 'openai_web_search';
+            $courtCountResult['search_results'] = [];
+            
+            // CRITICAL: Only flag for deletion if NO evidence of squash courts exists
+            // Finding evidence but not the count does NOT warrant deletion
+            if ($courtCountResult['evidence_found']) {
+                // Evidence of squash courts exists - venue is valid
+                if ($courtCountResult['court_count'] !== null) {
+                    $result['court_count_found'] = $courtCountResult['court_count'];
+                    $result['court_count_confidence'] = $courtCountResult['confidence'];
+                    
+                    // Update if confidence is MEDIUM or HIGH
+                    if (in_array($courtCountResult['confidence'], ['MEDIUM', 'HIGH'])) {
+                        $updateResult = $this->courtCountUpdater->updateVenue(
+                            $venue->id,
+                            $courtCountResult['court_count'],
+                            [
+                                'confidence' => $courtCountResult['confidence'],
+                                'reasoning' => $courtCountResult['reasoning'],
+                                'source_url' => $courtCountResult['source_url'],
+                                'source_type' => $courtCountResult['source_type'],
+                                'search_api_used' => $courtCountResult['search_api_used'],
+                                'search_results' => $courtCountResult['search_results'] ?? []
+                            ]
+                        );
+                        
+                        if ($updateResult['success']) {
+                            $result['court_count_updated'] = true;
+                            Log::info("Court count updated for venue #{$venue->id}", [
+                                'venue_id' => $venue->id,
+                                'court_count' => $courtCountResult['court_count'],
+                                'confidence' => $courtCountResult['confidence'],
+                            ]);
+                        }
+                    } else {
+                        // Evidence found but confidence too low to update
+                        Log::info("Court count found but confidence too low to update", [
+                            'venue_id' => $venue->id,
+                            'court_count' => $courtCountResult['court_count'],
+                            'confidence' => $courtCountResult['confidence'],
+                        ]);
+                    }
+                } else {
+                    // Evidence exists but couldn't determine count - DO NOT FLAG FOR DELETION
+                    Log::info("Evidence of squash courts found but count could not be determined", [
+                        'venue_id' => $venue->id,
+                        'reasoning' => $courtCountResult['reasoning'],
+                    ]);
+                }
+            } else {
+                // NO evidence of squash courts found - flag for deletion
+                $reasoning = $courtCountResult['reasoning'] ?? 'No evidence of squash courts found during web search';
+                $additionalDetails = [
+                    'source_url' => $courtCountResult['source_url'] ?? null,
+                    'search_api_used' => $courtCountResult['search_api_used'] ?? null,
+                    'search_results' => $courtCountResult['search_results'] ?? [],
+                    'venue_website' => $googlePlacesData['website'] ?? $googlePlacesData['websiteUri'] ?? null,
+                ];
+                $flagResult = $this->courtCountUpdater->flagVenueForDeletion($venue->id, $reasoning, $additionalDetails);
+                
+                if ($flagResult['success']) {
+                    $result['court_count_flagged_for_deletion'] = true;
+                    $result['venue_flagged_for_deletion'] = true;
+                    Log::warning("Venue #{$venue->id} flagged for deletion - no evidence of squash courts", [
+                        'venue_id' => $venue->id,
+                        'reasoning' => $reasoning,
+                    ]);
+                }
+            }
+        }
+
         return $result;
     }
 
@@ -250,9 +372,10 @@ class VenueCategorizer
             $query->where('category_id', 6);
         }
 
-        // Order by updated_at ascending to prioritize venues that haven't been processed recently
-        // This helps avoid re-processing the same low-confidence venues repeatedly
-        $venues = $query->orderBy('updated_at', 'asc')
+        // Order by: prioritize venues with no_of_courts = 0 or null, then by updated_at
+        // This helps test court counting functionality
+        $venues = $query->orderByRaw('CASE WHEN no_of_courts IS NULL OR no_of_courts = 0 THEN 0 ELSE 1 END')
+            ->orderBy('updated_at', 'asc')
             ->orderBy('id', 'asc')
             ->limit($limit)
             ->get();
@@ -405,6 +528,52 @@ class VenueCategorizer
     }
 
     /**
+     * Count courts for a venue using web search and AI analysis.
+     *
+     * @param Venue $venue
+     * @param array $googlePlacesData
+     * @return array{court_count: int|null, confidence: string, reasoning: string, source_url: string|null, source_type: string|null, evidence_found: bool, search_api_used: string|null, search_results: array}
+     */
+    protected function countVenueCourts(Venue $venue, array $googlePlacesData): array
+    {
+        // Get venue website from Google Places if available
+        // Note: websiteUri from Google Places API
+        $venueWebsite = $googlePlacesData['website'] ?? $googlePlacesData['websiteUri'] ?? null;
+        
+        // Search for court count information
+        $searchResult = $this->courtCountSearcher->searchForCourtCount(
+            $venue->name,
+            $venue->physical_address,
+            $venueWebsite
+        );
+        
+        if (!$searchResult['success'] || empty($searchResult['results'])) {
+            return [
+                'court_count' => null,
+                'confidence' => 'LOW',
+                'reasoning' => 'No search results found',
+                'source_url' => null,
+                'source_type' => null,
+                'evidence_found' => false,
+                'search_api_used' => $searchResult['api_used'],
+                'search_results' => [],
+            ];
+        }
+        
+        // Analyze search results with AI
+        $analysisResult = $this->courtCountAnalyzer->analyzeCourtCount(
+            $venue->name,
+            $searchResult['results']
+        );
+        
+        // Add search metadata
+        $analysisResult['search_api_used'] = $searchResult['api_used'];
+        $analysisResult['search_results'] = $searchResult['results'];
+        
+        return $analysisResult;
+    }
+
+    /**
      * Flag a venue for deletion when Place ID is expired and venue cannot be found.
      *
      * @param Venue $venue
@@ -412,12 +581,15 @@ class VenueCategorizer
      */
     protected function flagVenueForDeletion(Venue $venue): void
     {
+        $moreDetails = "Google Place ID expired and could not be refreshed. Attempted to find venue using Text Search API but no matching venue found. This suggests the venue may be permanently closed or no longer exists.";
+        
         DB::connection('squash_remote')->table('venues')
             ->where('id', $venue->id)
             ->update([
                 'status' => '3', // Flagged for Deletion
                 'delete_reason_id' => 2, // "Venue is permanently closed"
                 'reason_for_deletion' => 'Google Place ID expired, suggesting venue is closed',
+                'more_details' => $moreDetails,
                 'deletion_request_by_user_id' => 1, // System/Itomic Webmaster
                 'date_flagged_for_deletion' => now(),
                 'updated_at' => now(),

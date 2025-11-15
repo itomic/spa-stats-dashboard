@@ -216,6 +216,40 @@ class CategorizeVenues extends Command
             if ($result['suggest_new_category'] && $result['suggested_category_name']) {
                 $this->warn("💡 Suggests new category: {$result['suggested_category_name']}");
             }
+
+            // Show court count search if performed
+            if ($result['court_count_searched'] ?? false) {
+                $this->newLine();
+                $this->line("<fg=magenta>🏸 Court Count Search:</>");
+                
+                if ($result['court_count_found'] !== null) {
+                    $courtConfidence = $result['court_count_confidence'] ?? 'LOW';
+                    $courtConfidenceColor = match($courtConfidence) {
+                        'HIGH' => 'green',
+                        'MEDIUM' => 'yellow',
+                        'LOW' => 'red',
+                        default => 'white',
+                    };
+                    
+                    $this->line("<fg={$courtConfidenceColor}>   Found: {$result['court_count_found']} court(s) ({$courtConfidence} confidence)</>");
+                    
+                    if ($result['court_count_updated'] ?? false) {
+                        $this->info("   ✅ Court count updated in database");
+                    } else {
+                        $this->warn("   ⚠️  Confidence too low - not updated");
+                    }
+                } else {
+                    if ($result['court_count_flagged_for_deletion'] ?? false) {
+                        $this->error("   🗑️  No evidence of squash courts found - venue flagged for deletion");
+                    } else {
+                        // Check if we have evidence but couldn't determine count
+                        // This happens when evidence_found = true but court_count = null
+                        $this->warn("   ⚠️  Could not determine court count");
+                        $this->line("   ℹ️  Note: Evidence of squash courts was found, but exact count could not be determined");
+                        $this->line("   ℹ️  Venue will NOT be flagged for deletion (evidence exists)");
+                    }
+                }
+            }
         }
     }
 

@@ -47,4 +47,17 @@ return [
         'api_key' => env('OPENAI_API_KEY'),
     ],
 
+    'google_custom_search' => [
+        'api_key' => env('GOOGLE_CUSTOM_SEARCH_API_KEY'),
+        'engine_id' => env('GOOGLE_CUSTOM_SEARCH_ENGINE_ID'),
+    ],
+
+    'serpapi' => [
+        'api_key' => env('SERPAPI_API_KEY'),
+    ],
+
+    'tavily' => [
+        'api_key' => env('TAVILY_API_KEY'),
+    ],
+
 ];

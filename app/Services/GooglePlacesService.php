@@ -31,7 +31,7 @@ class GooglePlacesService
         try {
             $headers = [
                 'X-Goog-Api-Key' => $this->apiKey,
-                'X-Goog-FieldMask' => 'id,types,primaryType,displayName,formattedAddress,businessStatus,location,editorialSummary',
+                'X-Goog-FieldMask' => 'id,types,primaryType,displayName,formattedAddress,businessStatus,location,editorialSummary,websiteUri',
             ];
             
             // Add language code if provided (requests English names when available)
@@ -55,6 +55,7 @@ class GooglePlacesService
                         'businessStatus' => $data['businessStatus'] ?? null,
                         'location' => $data['location'] ?? null,
                         'editorialSummary' => $data['editorialSummary']['text'] ?? null,
+                        'website' => $data['websiteUri'] ?? null,
                     ],
                     'error' => null,
                 ];
