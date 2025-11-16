@@ -10,7 +10,7 @@
     window.squashTrivia = {
         maps: {},
         data: {},
-        config: window.squashTriviaConfig || { apiUrl: 'https://stats.squashplayers.app/api' },
+        config: window.squashTriviaConfig || { apiUrl: 'https://stats.squashplayers.app/squash' },
 
         /**
          * Initialize all trivia sections

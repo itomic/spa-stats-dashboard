@@ -30,7 +30,7 @@ if (is_admin() && file_exists(plugin_dir_path(__FILE__) . 'includes/class-admin-
 class Squash_Stats_Dashboard {
     
     private $dashboard_url = 'https://stats.squashplayers.app';
-    private $api_url = 'https://stats.squashplayers.app/api';
+    private $api_url = 'https://stats.squashplayers.app/squash';
     
     public function __construct() {
         // Register shortcodes
