@@ -3,7 +3,7 @@ Contributors: itomicapps
 Tags: squash, statistics, dashboard, sports, analytics
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.4.0
+Stable tag: 1.5.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -17,10 +17,11 @@ The Squash Stats Dashboard plugin allows you to embed comprehensive squash venue
 **Features:**
 
 * **Multiple Dashboards:** Choose from world stats, country stats, or venue types dashboards
+* **Trivia Page:** Native WordPress integration for fun facts and statistics
 * **Individual Charts:** Select specific charts to create custom dashboards
 * **Visual Admin Interface:** Browse and select charts with thumbnails in WordPress admin
 * **Chart Gallery:** Public gallery to preview all available charts before installing
-* **Shortcode Based:** Use `[squash_stats_dashboard]` anywhere with flexible parameters
+* **Shortcode Based:** Use `[squash_stats_dashboard]` and `[squash_trivia]` anywhere
 * **Auto-Updates:** Automatic update notifications from GitHub releases
 * **Complete Isolation:** iframe-based embedding prevents conflicts
 * **Multiple Instances:** Use on multiple pages with different chart combinations
@@ -88,6 +89,12 @@ Go to Settings → Squash Stats in WordPress admin to browse and select charts. 
 * `[squash_stats_dashboard charts="summary-stats,top-venues"]` - Multiple charts
 * `[squash_stats_dashboard charts="venue-map,continental-breakdown,timeline"]` - Custom combination
 
+**Trivia Page:**
+* `[squash_trivia]` - Full trivia page with all sections
+* `[squash_trivia section="high-altitude"]` - Just high altitude venues
+* `[squash_trivia section="graveyard"]` - Just the squash court graveyard
+* `[squash_trivia section="word-cloud"]` - Just the countries word cloud
+
 = What dashboards are available? =
 
 * **World Stats** - Complete global overview with all charts
@@ -129,6 +136,20 @@ Yes! The shortcode should work with most page builders that support WordPress sh
 4. Dashboard statistics overview
 
 == Changelog ==
+
+= 1.5.0 (2025-11-16) =
+* **MAJOR FEATURE:** Added native trivia page with `[squash_trivia]` shortcode
+* **NEW:** 10 interactive trivia sections (countries without venues, high altitude, extreme latitude, hotels, population stats, unknown courts, country club, word cloud, loneliest courts, graveyard)
+* **NEW:** Interactive Leaflet maps for geographic visualizations
+* **NEW:** Sortable tables with filtering capabilities
+* **NEW:** WordCloud2.js integration for country visualization
+* **NEW:** Responsive CSS styling with modern gradient theme
+* **NEW:** Auto-update system with GitHub releases integration
+* **NEW:** Facebook API service for enhanced venue data
+* **IMPROVED:** Court count analyzer with better website verification
+* **IMPROVED:** Search excludes squash.players.app to avoid circular references
+* **IMPROVED:** Comprehensive documentation for trivia shortcode
+* **FIXED:** Plugin updater now properly configured for auto-updates
 
 = 1.4.0 (2025-11-11) =
 * **MAJOR FEATURE:** Added multiple dashboard support (world, country, venue-types)

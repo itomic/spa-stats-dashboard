@@ -2,7 +2,7 @@
 # This script creates a zip file ready for WordPress installation
 
 $PLUGIN_NAME = "squash-stats-dashboard"
-$VERSION = "1.3.2"
+$VERSION = "1.5.0"
 $OUTPUT_FILE = "$PLUGIN_NAME.zip"  # Remove version from filename
 
 Write-Host "Packaging $PLUGIN_NAME plugin (v$VERSION)..." -ForegroundColor Green
@@ -10,12 +10,19 @@ Write-Host "Packaging $PLUGIN_NAME plugin (v$VERSION)..." -ForegroundColor Green
 # Create temporary directory with correct structure
 New-Item -ItemType Directory -Force -Path "temp\$PLUGIN_NAME" | Out-Null
 New-Item -ItemType Directory -Force -Path "temp\$PLUGIN_NAME\includes" | Out-Null
+New-Item -ItemType Directory -Force -Path "temp\$PLUGIN_NAME\assets" | Out-Null
+New-Item -ItemType Directory -Force -Path "temp\$PLUGIN_NAME\assets\css" | Out-Null
+New-Item -ItemType Directory -Force -Path "temp\$PLUGIN_NAME\assets\js" | Out-Null
 
 # Copy plugin files
 Copy-Item "squash-stats-dashboard-plugin.php" -Destination "temp\$PLUGIN_NAME\"
 Copy-Item "readme.txt" -Destination "temp\$PLUGIN_NAME\"
 Copy-Item "PLUGIN-README.md" -Destination "temp\$PLUGIN_NAME\README.md"
 Copy-Item "includes\class-plugin-updater.php" -Destination "temp\$PLUGIN_NAME\includes\"
+
+# Copy assets
+Copy-Item "assets\css\trivia.css" -Destination "temp\$PLUGIN_NAME\assets\css\"
+Copy-Item "assets\js\trivia.js" -Destination "temp\$PLUGIN_NAME\assets\js\"
 
 # Create zip file with correct structure
 # We need: squash-stats-dashboard/ at root of ZIP with files inside
@@ -36,10 +43,13 @@ Write-Host "3. Activate in WordPress Admin -> Plugins"
 Write-Host ""
 Write-Host "To use:" -ForegroundColor Cyan
 Write-Host "1. Create a new WordPress page (or edit an existing one)"
-Write-Host "2. Add the shortcode: [squash_stats_dashboard]"
+Write-Host "2. Add a shortcode:"
+Write-Host "   - Dashboard: [squash_stats_dashboard]"
+Write-Host "   - Trivia: [squash_trivia]"
 Write-Host "3. Publish!"
 Write-Host ""
 Write-Host "Optional parameters:" -ForegroundColor Gray
 Write-Host "  [squash_stats_dashboard height='2000px']"
 Write-Host "  [squash_stats_dashboard class='my-custom-class']"
+Write-Host "  [squash_trivia section='high-altitude']"
 
