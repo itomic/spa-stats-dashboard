@@ -1463,6 +1463,7 @@ class SquashDataAggregator
                 'v.no_of_courts',
                 'v.status',
                 'v.reason_for_deletion',
+                'v.more_details',
                 'v.date_deleted',
                 'c.name as country_name',
                 'c.alpha_2_code as country_code',
@@ -1473,6 +1474,10 @@ class SquashDataAggregator
             ->get();
 
         return $venues->map(function ($venue) {
+            // Use more_details if available (AI-generated detailed explanation), 
+            // otherwise fall back to reason_for_deletion
+            $reasonDetails = $venue->more_details ?? $venue->reason_for_deletion;
+            
             return [
                 'id' => (int) $venue->id,
                 'name' => $venue->name,
@@ -1484,7 +1489,7 @@ class SquashDataAggregator
                 'courts' => $venue->no_of_courts ? (int) $venue->no_of_courts : null,
                 'delete_reason_id' => $venue->delete_reason_id ? (int) $venue->delete_reason_id : null,
                 'delete_reason' => $venue->delete_reason ?? 'Other',
-                'reason_details' => $venue->reason_for_deletion,
+                'reason_details' => $reasonDetails,
                 'date_deleted' => $venue->date_deleted,
             ];
         })->toArray();
