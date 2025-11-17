@@ -2820,6 +2820,15 @@ async function initCourtGraveyard() {
 }
 
 /**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
  * Render graveyard table
  */
 function renderGraveyardTable(data) {
@@ -2840,11 +2849,38 @@ function renderGraveyardTable(data) {
             day: 'numeric' 
         });
         
+        // Truncate reason details to 200 characters
+        let reasonDisplay = '';
+        let reasonFull = '';
+        let isTruncated = false;
+        if (venue.reason_details) {
+            reasonFull = venue.reason_details;
+            if (reasonFull.length > 200) {
+                reasonDisplay = reasonFull.substring(0, 200) + '...';
+                isTruncated = true;
+            } else {
+                reasonDisplay = reasonFull;
+            }
+        }
+        
+        // Generate unique ID for this row's reason
+        const reasonId = `reason-${venue.id || Math.random().toString(36).substr(2, 9)}`;
+        
         html += `
             <tr>
                 <td>
                     <strong>${venue.name}</strong>
-                    ${venue.reason_details ? `<br><small class="text-muted">${venue.reason_details}</small>` : ''}
+                    ${reasonDisplay ? `
+                        <br><small class="text-muted graveyard-reason-text" 
+                                   data-reason-id="${reasonId}"
+                                   data-full-reason="${escapeHtml(reasonFull)}"
+                                   data-is-truncated="${isTruncated}"
+                                   title="${isTruncated ? 'Click to expand full reason' : ''}"
+                                   style="cursor: ${isTruncated ? 'pointer' : 'default'};">
+                            <span class="reason-display">${escapeHtml(reasonDisplay)}</span>
+                            ${isTruncated ? '<span class="reason-full d-none">' + escapeHtml(reasonFull) + '</span>' : ''}
+                        </small>
+                    ` : ''}
                 </td>
                 <td><small>${address || '-'}</small></td>
                 <td>
@@ -2858,6 +2894,28 @@ function renderGraveyardTable(data) {
     });
     
     tableBody.innerHTML = html;
+    
+    // Add click handlers for truncated reasons
+    tableBody.querySelectorAll('.graveyard-reason-text[data-is-truncated="true"]').forEach(element => {
+        element.addEventListener('click', function() {
+            const displaySpan = this.querySelector('.reason-display');
+            const fullSpan = this.querySelector('.reason-full');
+            
+            if (displaySpan && fullSpan) {
+                if (displaySpan.classList.contains('d-none')) {
+                    // Collapse: show truncated
+                    displaySpan.classList.remove('d-none');
+                    fullSpan.classList.add('d-none');
+                    this.title = 'Click to expand full reason';
+                } else {
+                    // Expand: show full
+                    displaySpan.classList.add('d-none');
+                    fullSpan.classList.remove('d-none');
+                    this.title = 'Click to collapse';
+                }
+            }
+        });
+    });
 }
 
 /**
