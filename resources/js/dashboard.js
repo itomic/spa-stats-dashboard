@@ -2780,14 +2780,23 @@ async function initCourtGraveyard() {
         allData = await fetchData('/court-graveyard');
         filteredData = allData;
         
-        // Extract unique countries and populate country filter
-        const countries = [...new Set(allData.map(v => v.country_code))].sort();
+        // Extract unique countries and populate country filter (sorted A-Z by country name)
+        const countryMap = new Map();
+        allData.forEach(venue => {
+            if (!countryMap.has(venue.country_code)) {
+                countryMap.set(venue.country_code, venue.country);
+            }
+        });
+        
+        // Convert to array and sort by country name
+        const sortedCountries = Array.from(countryMap.entries())
+            .sort((a, b) => a[1].localeCompare(b[1])); // Sort by country name
+        
         countryFilter.innerHTML = '<option value="">All Countries</option>';
-        countries.forEach(code => {
-            const venue = allData.find(v => v.country_code === code);
+        sortedCountries.forEach(([code, countryName]) => {
             const option = document.createElement('option');
             option.value = code;
-            option.textContent = venue.country;
+            option.textContent = countryName;
             countryFilter.appendChild(option);
         });
         
@@ -2853,8 +2862,12 @@ function renderGraveyardTable(data) {
         let reasonDisplay = '';
         let reasonFull = '';
         let isTruncated = false;
-        if (venue.reason_details) {
-            reasonFull = venue.reason_details;
+        
+        // Get reason text - check both reason_details and more_details for compatibility
+        const reasonText = venue.reason_details || venue.more_details || '';
+        
+        if (reasonText) {
+            reasonFull = String(reasonText); // Ensure it's a string
             if (reasonFull.length > 200) {
                 reasonDisplay = reasonFull.substring(0, 200) + '...';
                 isTruncated = true;
