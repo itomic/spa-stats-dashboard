@@ -86,7 +86,49 @@ file_put_contents($logFile, $logMessage, FILE_APPEND);
 
 // Execute deployment script in background
 $command = sprintf('bash %s > /home/stats/logs/deploy-output.log 2>&1 &', escapeshellarg($deployScript));
-exec($command);
+$logMessage = sprintf(
+    "[%s] Executing deployment command: %s\n",
+    date('Y-m-d H:i:s'),
+    $command
+);
+file_put_contents($logFile, $logMessage, FILE_APPEND);
+
+// Verify deploy script exists and is executable
+if (!file_exists($deployScript)) {
+    $errorMsg = "Deploy script not found: $deployScript";
+    file_put_contents($logFile, "[ERROR] $errorMsg\n", FILE_APPEND);
+    http_response_code(500);
+    die(json_encode(['error' => $errorMsg]));
+}
+
+if (!is_executable($deployScript)) {
+    $errorMsg = "Deploy script is not executable: $deployScript";
+    file_put_contents($logFile, "[ERROR] $errorMsg\n", FILE_APPEND);
+    http_response_code(500);
+    die(json_encode(['error' => $errorMsg]));
+}
+
+// Execute the command and capture output
+$output = [];
+$returnVar = 0;
+exec($command . ' 2>&1', $output, $returnVar);
+
+// Log execution result
+$logMessage = sprintf(
+    "[%s] Deployment command executed. Return code: %d\n",
+    date('Y-m-d H:i:s'),
+    $returnVar
+);
+file_put_contents($logFile, $logMessage, FILE_APPEND);
+
+if ($returnVar !== 0 && !empty($output)) {
+    $logMessage = sprintf(
+        "[%s] Command output: %s\n",
+        date('Y-m-d H:i:s'),
+        implode("\n", $output)
+    );
+    file_put_contents($logFile, $logMessage, FILE_APPEND);
+}
 
 // Return success
 http_response_code(200);
