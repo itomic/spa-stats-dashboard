@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\ChartRegistry;
 use App\Services\DashboardRegistry;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class ChartController extends Controller
@@ -17,9 +18,9 @@ class ChartController extends Controller
      * 2. Custom charts mode: ?charts=venue-map,top-venues (renders specific charts)
      *
      * @param Request $request
-     * @return View
+     * @return View|RedirectResponse
      */
-    public function render(Request $request): View
+    public function render(Request $request)
     {
         $dashboard = $request->get('dashboard');
         $chartsParam = $request->get('charts');
