@@ -108,27 +108,22 @@ if (!is_executable($deployScript)) {
     die(json_encode(['error' => $errorMsg]));
 }
 
-// Execute the command and capture output
+// Execute the command in background
+// Note: When using '&' to run in background, exec() returns immediately with code 0
+// The actual script execution happens asynchronously
 $output = [];
 $returnVar = 0;
-exec($command . ' 2>&1', $output, $returnVar);
+exec($command, $output, $returnVar);
 
-// Log execution result
+// Log execution attempt
 $logMessage = sprintf(
-    "[%s] Deployment command executed. Return code: %d\n",
-    date('Y-m-d H:i:s'),
-    $returnVar
+    "[%s] Deployment command initiated. Background process started.\n",
+    date('Y-m-d H:i:s')
 );
 file_put_contents($logFile, $logMessage, FILE_APPEND);
 
-if ($returnVar !== 0 && !empty($output)) {
-    $logMessage = sprintf(
-        "[%s] Command output: %s\n",
-        date('Y-m-d H:i:s'),
-        implode("\n", $output)
-    );
-    file_put_contents($logFile, $logMessage, FILE_APPEND);
-}
+// Note: Since the command runs in background with '&', we can't capture its return code here
+// Check /home/stats/logs/deploy-output.log for actual deployment results
 
 // Return success
 http_response_code(200);
