@@ -85,17 +85,6 @@ $logMessage = sprintf(
 );
 file_put_contents($logFile, $logMessage, FILE_APPEND);
 
-<<<<<<< HEAD
-// Pull latest changes from GitHub to cPanel-managed repository
-// Then trigger cPanel's built-in deployment using .cpanel.yml
-$logMessage = sprintf(
-    "[%s] 📥 Pulling latest changes from GitHub to cPanel repository...\n",
-    date('Y-m-d H:i:s')
-);
-file_put_contents($logFile, $logMessage, FILE_APPEND);
-
-=======
->>>>>>> develop
 // Verify repo directory exists
 if (!is_dir($repoDir)) {
     $errorMsg = "Repository directory not found: $repoDir";
@@ -104,32 +93,20 @@ if (!is_dir($repoDir)) {
     die(json_encode(['error' => $errorMsg]));
 }
 
-<<<<<<< HEAD
-// Pull from GitHub and then trigger cPanel deployment
-// cPanel's deployment uses .cpanel.yml file automatically
-$command = sprintf(
-    'cd %s && git pull origin main >> /home/stats/logs/deploy-output.log 2>&1 && /usr/bin/uapi VersionControlDeployment create repository_root=%s >> /home/stats/logs/deploy-output.log 2>&1 &',
-    escapeshellarg($repoDir),
-    escapeshellarg($repoDir)
-);
-
-$logMessage = sprintf(
-    "[%s] Executing: git pull + cPanel deployment\n",
-=======
 // Pull from GitHub and run deploy.sh
 // Note: We use deploy.sh instead of cPanel's UAPI VersionControlDeployment because:
 // - cPanel's UAPI returns success but doesn't actually deploy (repository not marked as "deployable")
 // - Custom deployment scripts are the industry-standard approach for automated cPanel deployments
 // - Provides better control, logging, and reliability
+// Run as 'stats' user to avoid permission issues
 $command = sprintf(
-    'cd %s && git pull origin main >> /home/stats/logs/deploy-output.log 2>&1 && bash %s >> /home/stats/logs/deploy-output.log 2>&1 &',
+    'su - stats -c "cd %s && git pull origin main >> /home/stats/logs/deploy-output.log 2>&1 && bash %s >> /home/stats/logs/deploy-output.log 2>&1" &',
     escapeshellarg($repoDir),
     escapeshellarg($deployScript)
 );
 
 $logMessage = sprintf(
     "[%s] Executing: git pull + deploy.sh (custom deployment script)\n",
->>>>>>> develop
     date('Y-m-d H:i:s')
 );
 file_put_contents($logFile, $logMessage, FILE_APPEND);
@@ -139,21 +116,11 @@ exec($command);
 
 // Log execution attempt
 $logMessage = sprintf(
-<<<<<<< HEAD
-    "[%s] Git pull and cPanel deployment initiated. Background process started.\n",
-=======
     "[%s] Deployment initiated. Check deploy-output.log for results.\n",
->>>>>>> develop
     date('Y-m-d H:i:s')
 );
 file_put_contents($logFile, $logMessage, FILE_APPEND);
 
-<<<<<<< HEAD
-// Note: Deployment will use .cpanel.yml automatically via cPanel's UAPI
-// Check /home/stats/logs/deploy-output.log for actual deployment results
-
-=======
->>>>>>> develop
 // Return success
 http_response_code(200);
 echo json_encode([
@@ -161,4 +128,3 @@ echo json_encode([
     'message' => 'Deployment started',
     'commit' => substr($data['head_commit']['id'] ?? '', 0, 7)
 ]);
-
