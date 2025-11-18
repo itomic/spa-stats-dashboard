@@ -6,7 +6,7 @@
 
 // Configuration
 $secret = '413d66fed586f3447e62dd9f2f574400868b1ebf738cdd4278cf31b0a0be3b6b';
-$deployScript = '/home/stats/deploy.sh';
+$repoDir = '/home/stats/repo';
 $logFile = '/home/stats/logs/webhook-deploy.log';
 
 // Get the payload
