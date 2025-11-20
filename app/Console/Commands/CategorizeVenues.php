@@ -721,6 +721,53 @@ class CategorizeVenues extends Command
     }
 
     /**
+     * Build a clean address string without duplicate parts.
+     */
+    protected function buildCleanAddress(?string $physicalAddress, ?string $suburb, ?string $state, ?string $country): string
+    {
+        $parts = [];
+        
+        // Start with physical address if it exists
+        if (!empty($physicalAddress)) {
+            $parts[] = trim($physicalAddress);
+        }
+        
+        // Add suburb if it's not already in physical address
+        if (!empty($suburb)) {
+            $suburb = trim($suburb);
+            if (!empty($parts)) {
+                // Check if suburb is already contained in the last part (physical address)
+                $lastPart = end($parts);
+                if (stripos($lastPart, $suburb) === false) {
+                    $parts[] = $suburb;
+                }
+            } else {
+                $parts[] = $suburb;
+            }
+        }
+        
+        // Add state if it's not already in previous parts
+        if (!empty($state)) {
+            $state = trim($state);
+            $combinedSoFar = implode(', ', $parts);
+            if (stripos($combinedSoFar, $state) === false) {
+                $parts[] = $state;
+            }
+        }
+        
+        // Add country if it's not already in previous parts
+        if (!empty($country)) {
+            $country = trim($country);
+            $combinedSoFar = implode(', ', $parts);
+            if (stripos($combinedSoFar, $country) === false) {
+                $parts[] = $country;
+            }
+        }
+        
+        return implode(', ', $parts);
+    }
+
+    /**
      * Get category name by ID.
      */
     protected function getCategoryName(int $categoryId): string
@@ -804,14 +851,13 @@ class CategorizeVenues extends Command
             ->pluck('name', 'id');
 
         foreach ($flaggedVenues as $venue) {
-            $addressParts = array_filter([
+            $fullAddress = $this->buildCleanAddress(
                 $venue->physical_address,
                 $venue->suburb,
                 $venue->state,
-                $countries[$venue->country_id] ?? null,
-            ]);
+                $countries[$venue->country_id] ?? null
+            );
             
-            $fullAddress = implode(', ', $addressParts);
             $this->line("{$venue->name}, {$fullAddress}");
         }
         
